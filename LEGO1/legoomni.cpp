@@ -112,6 +112,13 @@ MxResult LegoOmni::Create(MxOmniCreateParam &p)
   return SUCCESS;
 }
 
+#if defined(__MINGW32__)
+MxResult LegoOmni::Create(const MxOmniCreateParam &p)
+{
+  return Create((MxOmniCreateParam &)p);
+}
+#endif
+
 void LegoOmni::Destroy()
 {
   // FIXME: Stub
