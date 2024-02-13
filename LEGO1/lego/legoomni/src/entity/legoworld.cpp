@@ -19,6 +19,7 @@
 #include "mxnotificationparam.h"
 #include "mxomni.h"
 #include "mxticklemanager.h"
+#include "viewmanager/viewmanager.h"
 
 DECOMP_SIZE_ASSERT(LegoWorld, 0xf8)
 DECOMP_SIZE_ASSERT(LegoEntityList, 0x18)

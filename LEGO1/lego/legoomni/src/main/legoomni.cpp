@@ -1,5 +1,6 @@
 #include "legoomni.h"
 
+#include "3dmanager/lego3dmanager.h"
 #include "gifmanager.h"
 #include "legoanimationmanager.h"
 #include "legobuildingmanager.h"
@@ -23,7 +24,6 @@
 #include "mxstreamer.h"
 #include "mxticklemanager.h"
 #include "mxtransitionmanager.h"
-#include "viewmanager/viewmanager.h"
 
 DECOMP_SIZE_ASSERT(LegoOmni::ScriptContainer, 0x1c)
 DECOMP_SIZE_ASSERT(LegoOmni::PathContainer, 0x38)

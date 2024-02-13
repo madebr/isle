@@ -31,13 +31,37 @@ if (MSVC)
     endif()
 endif()
 
+macro(target_decomp_msvc TARGET)
+  if (MSVC_FOR_DECOMP)
+    # Only check class sizes in Release mode
+    target_compile_definitions(${TARGET} PRIVATE "$<$<CONFIG:Release>:ENABLE_DECOMP_ASSERTS>")
+    if (CMAKE_CXX_COMPILER_ID VERSION_LESS 12)
+      # Older MSVC versions don't support building in parallel.
+      # Force non-parallel builds of isle and lego1 by putting them in a pool with 1 available job.
+      set_property(GLOBAL APPEND PROPERTY JOB_POOLS "msvc_${TARGET}=1")
+      set_property(TARGET ${TARGET} PROPERTY JOB_POOL_COMPILE "msvc_${TARGET}")
+      set_property(TARGET ${TARGET} PROPERTY JOB_POOL_LINK "msvc_${TARGET}")
+    endif()
+  endif()
+  if (MSVC)
+    # Don't complain about use of unsafe CRT
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "15")
+      target_compile_definitions(${TARGET} PRIVATE "_CRT_SECURE_NO_WARNINGS")
+    endif()
+    # Visual Studio 2017 version 15.7 needs "/Zc:__cplusplus" for __cplusplus
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.14.26428")
+      target_compile_options(${TARGET} PRIVATE "-Zc:__cplusplus")
+    endif()
+  endif()
+endmacro()
+
 set(lego1_targets)
 macro(register_lego1_target __target)
   list(APPEND lego1_targets ${__target})
 endmacro()
 
 function(add_cxx_warning WARNING)
-    if(ISLE_WERROR)
+    if (ISLE_WERROR)
         set(compiler_option "-Werror=${WARNING}")
     else()
         set(compiler_option "-W${WARNING}")
@@ -46,7 +70,7 @@ function(add_cxx_warning WARNING)
 
     cmake_push_check_state(RESET)
     set(CMAKE_REQUIRED_FLAGS "${compiler_option} ")
-    if(MSVC)
+    if (MSVC)
         string(APPEND CMAKE_REQUIRED_FLAGS "/WX")
     else()
         string(APPEND CMAKE_REQUIRED_FLAGS "-Werror")
@@ -54,7 +78,7 @@ function(add_cxx_warning WARNING)
     check_cxx_source_compiles("int main() { return 0; }" ${varname})
     cmake_pop_check_state()
 
-    if(${varname})
+    if (${varname})
         add_compile_options(${compiler_option})
     endif()
 endfunction()
@@ -64,6 +88,7 @@ message(STATUS "MSVC for decompilation: ${MSVC_FOR_DECOMP}")
 option(ISLE_WERROR "Treat warnings as errors" OFF)
 option(ISLE_BUILD_APP "Build ISLE.EXE application" ON)
 cmake_dependent_option(ISLE_BUILD_CONFIG "Build CONFIG.EXE application" ON "NOT MINGW" OFF)
+cmake_dependent_option(ISLE_BUILD_ISLEMFC "Build MAINR.EXE application" ON "NOT MINGW" OFF)
 option(ISLE_USE_SMARTHEAP "Build with SmartHeap" ${MSVC_FOR_DECOMP})
 option(ISLE_USE_DX5 "Build with internal DirectX 5 SDK" ON)
 cmake_dependent_option(ISLE_USE_DX5_LIBS "Build with internal DirectX 5 SDK Libraries" ON ISLE_USE_DX5 OFF)
@@ -72,8 +97,8 @@ add_cxx_warning(parentheses)
 
 add_library(DirectX5::DirectX5 INTERFACE IMPORTED)
 target_include_directories(DirectX5::DirectX5 INTERFACE "${CMAKE_SOURCE_DIR}/3rdparty/dx5/inc")
-if(ISLE_USE_DX5_LIBS)
-    target_link_directories(DirectX5::DirectX5 INTERFACE "${CMAKE_SOURCE_DIR}/3rdparty/dx5/lib")
+if (ISLE_USE_DX5_LIBS)
+  target_link_directories(DirectX5::DirectX5 INTERFACE "${CMAKE_SOURCE_DIR}/3rdparty/dx5/lib")
 endif()
 
 add_library(Smacker::Smacker STATIC IMPORTED)
@@ -104,6 +129,7 @@ add_library(tglrl STATIC
   LEGO1/tgl/d3drm/view.cpp
 )
 register_lego1_target(tglrl)
+target_decomp_msvc(tglrl)
 set_property(TARGET tglrl PROPERTY ARCHIVE_OUTPUT_NAME "tglrl40$<$<CONFIG:Debug>:d>")
 target_include_directories(tglrl PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(tglrl PRIVATE d3drm)
@@ -116,6 +142,7 @@ add_library(realtime STATIC
   LEGO1/realtime/vector.cpp
 )
 register_lego1_target(realtime)
+target_decomp_msvc(realtime)
 set_property(TARGET realtime PROPERTY ARCHIVE_OUTPUT_NAME "realtime$<$<CONFIG:Debug>:d>")
 target_include_directories(realtime PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(realtime PRIVATE Vec::Vec)
@@ -126,6 +153,7 @@ add_library(viewmanager STATIC
   LEGO1/viewmanager/viewroi.cpp
 )
 register_lego1_target(viewmanager)
+target_decomp_msvc(viewmanager)
 set_property(TARGET viewmanager PROPERTY ARCHIVE_OUTPUT_NAME "viewmanager$<$<CONFIG:Debug>:d>")
 target_include_directories(viewmanager PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(viewmanager PRIVATE Vec::Vec)
@@ -135,6 +163,7 @@ add_library(mxdirectx STATIC
   LEGO1/mxdirectx/mxdirectdraw.cpp
 )
 register_lego1_target(mxdirectx)
+target_decomp_msvc(mxdirectx)
 set_property(TARGET mxdirectx PROPERTY ARCHIVE_OUTPUT_NAME "MxDirectX$<$<CONFIG:Debug>:d>")
 target_include_directories(mxdirectx PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(mxdirectx PRIVATE ddraw)
@@ -143,6 +172,7 @@ add_library(roi STATIC
   LEGO1/lego/sources/roi/legoroi.cpp
 )
 register_lego1_target(roi)
+target_decomp_msvc(roi)
 set_property(TARGET roi PROPERTY ARCHIVE_OUTPUT_NAME "roi$<$<CONFIG:Debug>:d>")
 target_include_directories(roi PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(roi PRIVATE)
@@ -154,6 +184,7 @@ add_library(misc STATIC
   LEGO1/lego/sources/misc/legotree.cpp
 )
 register_lego1_target(misc)
+target_decomp_msvc(misc)
 set_property(TARGET misc PROPERTY ARCHIVE_OUTPUT_NAME "misc$<$<CONFIG:Debug>:d>")
 target_include_directories(misc PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1/omni/include" "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/LEGO1/realtime" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(misc PRIVATE)
@@ -165,6 +196,7 @@ add_library(3dmanager STATIC
   LEGO1/lego/sources/3dmanager/tglsurface.cpp
 )
 register_lego1_target(3dmanager)
+target_decomp_msvc(3dmanager)
 set_property(TARGET 3dmanager PROPERTY ARCHIVE_OUTPUT_NAME "3dmanager$<$<CONFIG:Debug>:d>")
 target_include_directories(3dmanager PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(3dmanager PRIVATE Vec::Vec)
@@ -252,6 +284,7 @@ add_library(omni STATIC
   LEGO1/omni/src/video/mxvideopresenter.cpp
 )
 register_lego1_target(omni)
+target_decomp_msvc(omni)
 set_property(TARGET omni PROPERTY ARCHIVE_OUTPUT_NAME "omni$<$<CONFIG:Debug>:d>")
 target_include_directories(omni PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1/omni/include" "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/LEGO1" "${CMAKE_SOURCE_DIR}/util")
 target_link_libraries(omni PRIVATE dsound winmm FLIC::FLIC Smacker::Smacker)
@@ -383,10 +416,10 @@ add_library(lego1 SHARED
   LEGO1/main.cpp
 )
 register_lego1_target(lego1)
+target_decomp_msvc(lego1)
+set_property(TARGET lego1 PROPERTY DEFINE_SYMBOL BUILDING_LEGO1)
 
-if (MINGW)
-  target_compile_definitions(lego1 PRIVATE DIRECTINPUT_VERSION=0x0500)
-endif()
+target_compile_definitions(lego1 PRIVATE DIRECTINPUT_VERSION=0x0500)
 
 if (MSVC)
   target_sources(lego1 PRIVATE LEGO1/LegoOmni.def)
@@ -399,6 +432,7 @@ target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1")
 target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1/omni/include")
 target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1/lego/sources")
 target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1/lego/legoomni/include")
+target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1/mxgeometry")
 target_include_directories(lego1 PUBLIC "${CMAKE_SOURCE_DIR}/LEGO1/realtime")
 
 # Link libraries
@@ -409,9 +443,11 @@ if (ISLE_USE_SMARTHEAP)
     target_link_libraries(${tgt} PRIVATE SmartHeap::SmartHeap)
   endforeach()
 endif()
-foreach(tgt IN LISTS lego1_targets)
-  target_link_libraries(${tgt} PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)
-endforeach()
+if (ISLE_USE_DX5)
+  foreach(tgt IN LISTS lego1_targets)
+    target_link_libraries(${tgt} PRIVATE DirectX5::DirectX5)
+  endforeach()
+endif()
 
 # Make sure filenames are ALL CAPS
 set_property(TARGET lego1 PROPERTY OUTPUT_NAME LEGO1)
@@ -423,8 +459,7 @@ if (ISLE_BUILD_APP)
     ISLE/res/isle.rc
     ISLE/isleapp.cpp
   )
-
-  target_compile_definitions(isle PRIVATE ISLE_APP)
+  target_decomp_msvc(isle)
 
   # Use internal DirectX 5 if required
   target_link_libraries(isle PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)
@@ -452,9 +487,10 @@ if (ISLE_BUILD_CONFIG)
     CONFIG/StdAfx.cpp
     CONFIG/res/config.rc
   )
+  target_decomp_msvc(config)
   target_compile_definitions(config PRIVATE _AFXDLL MXDIRECTX_FOR_CONFIG)
   target_include_directories(config PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/util" "${CMAKE_CURRENT_SOURCE_DIR}/LEGO1")
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
     target_link_libraries(config PRIVATE DirectX5::DirectX5)
   endif()
   target_compile_definitions(config PRIVATE DIRECT3D_VERSION=0x500)
@@ -464,41 +500,52 @@ if (ISLE_BUILD_CONFIG)
   set_property(TARGET config PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
 endif()
 
-if (MSVC)
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "15")
-    set_property(TARGET ${lego1_targets} APPEND PROPERTY COMPILE_DEFINITIONS "_CRT_SECURE_NO_WARNINGS")
-    if (TARGET isle)
-      target_compile_definitions(isle PRIVATE "_CRT_SECURE_NO_WARNINGS")
-    endif()
-    if (TARGET config)
-      target_compile_definitions(config PRIVATE "_CRT_SECURE_NO_WARNINGS")
-    endif()
+if (ISLE_BUILD_ISLEMFC)
+#  get_property(LEGO1_SOURCES TARGET lego1 PROPERTY SOURCES)
+#  list(FILTER LEGO1_SOURCES EXCLUDE REGEX ".*\\.def")
+#  add_library(islemfc_lego1 SHARED $<TARGET_OBJECTS:lego1>)
+#  set_property(TARGET islemfc_lego1 PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+#  set_property(TARGET islemfc_lego1 PROPERTY OUTPUT_NAME "MAINR_LEGO1")
+#  set_property(TARGET islemfc_lego1 PROPERTY SUFFIX ".DLL")
+#  set_property(TARGET islemfc_lego1 PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>DLL)
+#  #target_include_directories(islemfc_lego1 PRIVATE $<TARGET_PROPERTY:lego1,INCLUDE_DIRECTORIES>)
+#  target_include_directories(islemfc_lego1 INTERFACE $<TARGET_PROPERTY:lego1,INTERFACE_INCLUDE_DIRECTORIES>)
+#  target_link_libraries(islemfc_lego1 PRIVATE tglrl viewmanager realtime mxdirectx roi FLIC::FLIC Vec::Vec dinput dxguid misc 3dmanager omni)
+##  target_link_libraries(islemfc_lego1 PRIVATE tglrl viewmanager realtime mxdirectx roi FLIC::FLIC Vec::Vec dinput dxguid misc 3dmanager omni)
+#  if (ISLE_USE_DX5)
+#    target_link_libraries(islemfc_lego1 PRIVATE DirectX5::DirectX5)
+#  endif()
+  add_executable(islemfc WIN32
+    islemfc/res/islemfc.rc
+    islemfc/ActionsDlg.cpp
+    islemfc/GeneralPropertyPage.cpp
+    islemfc/LocationPropertyPage.cpp
+    islemfc/TimePropertyPage.cpp
+    islemfc/TimeAverage.cpp
+    islemfc/GetVariableDlg.cpp
+    islemfc/islegame.cpp
+    islemfc/main.cpp
+    islemfc/MainCommandLineInfo.cpp
+    islemfc/MainContextMenu.cpp
+    islemfc/MainFrameWnd.cpp
+    islemfc/MediaPathDlg.cpp
+    islemfc/NavigationDlg.cpp
+    islemfc/SetMusicVolumeDlg.cpp
+    islemfc/SetSoundVolumeDlg.cpp
+    islemfc/SetVariableDlg.cpp
+    islemfc/TickleDlg.cpp
+    islemfc/TimeAverage.cpp
+    islemfc/TimingDlg.cpp
+    islemfc/VideoDlg.cpp
+  )
+  target_decomp_msvc(islemfc)
+  target_compile_definitions(islemfc PRIVATE _AFXDLL)
+  target_link_libraries(islemfc PRIVATE lego1)
+  if (ISLE_USE_DX5 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+    target_link_libraries(islemfc PRIVATE DirectX5::DirectX5)
   endif()
-  # Visual Studio 2017 version 15.7 needs "/Zc:__cplusplus" for __cplusplus
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.14.26428")
-    foreach(tgt IN LISTS lego1_targets)
-      target_compile_options(${tgt} PRIVATE "-Zc:__cplusplus")
-    endforeach()
-    if (TARGET isle)
-      target_compile_options(isle PRIVATE "-Zc:__cplusplus")
-    endif()
-    if (TARGET config)
-      target_compile_options(config PRIVATE "-Zc:__cplusplus")
-    endif()
-  endif()
-endif()
-
-if (MSVC_FOR_DECOMP)
-    foreach(tgt IN LISTS lego1_targets)
-      target_compile_definitions(${tgt} PRIVATE "ENABLE_DECOMP_ASSERTS")
-    endforeach()
-
-    if (TARGET isle)
-      target_compile_definitions(isle PRIVATE "ENABLE_DECOMP_ASSERTS")
-    endif()
-    if (TARGET config)
-      target_compile_definitions(config PRIVATE "ENABLE_DECOMP_ASSERTS")
-    endif()
+  set_property(TARGET islemfc PROPERTY OUTPUT_NAME "MAINR")
+  set_property(TARGET islemfc PROPERTY SUFFIX ".EXE")
 endif()
 
 if (MSVC_FOR_DECOMP)
@@ -506,7 +553,7 @@ if (MSVC_FOR_DECOMP)
   # game was originally built with) and tweaked slightly to produce more debugging info for reccmp.
   # They ensure a recompilation that can be byte/instruction accurate to the original binaries.
   if (ISLE_BUILD_APP)
-    target_compile_options(isle PRIVATE "/MT$<$<CONFIG:Debug>:d>")
+    set_property(TARGET isle PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
     target_link_options(isle PRIVATE "/OPT:REF")
   endif()
 
@@ -532,37 +579,26 @@ if (MSVC_FOR_DECOMP)
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/incremental:no")
   set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "/incremental:no /debug")
   set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/incremental:no")
-
-  # Older MSVC versions don't support building in parallel.
-  # Force non-parallel builds of isle and lego1 by putting them in a pool with 1 available job.
-  if (CMAKE_CXX_COMPILER_ID VERSION_LESS 12)
-    foreach(tgt IN LISTS lego1_targets)
-      set_property(GLOBAL APPEND PROPERTY JOB_POOLS "msvc_${tgt}=1;msvc_lego1=1")
-      set_property(TARGET ${tgt} PROPERTY JOB_POOL_COMPILE msvc_${tgt})
-      set_property(TARGET ${tgt} PROPERTY JOB_POOL_LINK msvc_${tgt})
-    endforeach()
-    if (TARGET isle)
-      set_property(GLOBAL APPEND PROPERTY JOB_POOLS "msvc_isle=1")
-      set_property(TARGET isle PROPERTY JOB_POOL_COMPILE msvc_isle)
-      set_property(TARGET isle PROPERTY JOB_POOL_LINK msvc_isle)
-    endif()
-  endif()
 endif()
 
 find_program(CLANGFORMAT_BIN NAMES clang-format)
-if(EXISTS "${CLANGFORMAT_BIN}")
+if (EXISTS "${CLANGFORMAT_BIN}")
   execute_process(COMMAND "${CLANGFORMAT_BIN}" --version
     OUTPUT_VARIABLE "CLANGFORMAT_VERSION_OUTPUT"
     RESULT_VARIABLE "CLANGFORMAT_RESULT"
   )
-  if(CLANGFORMAT_RESULT EQUAL 0 AND CLANGFORMAT_VERSION_OUTPUT MATCHES "version ([0-9\\.]+)")
+  if (CLANGFORMAT_RESULT EQUAL 0 AND CLANGFORMAT_VERSION_OUTPUT MATCHES "version ([0-9\\.]+)")
     set(CLANGFORMAT_VERSION "${CMAKE_MATCH_1}")
     set(CLANGFORMAT_VERSION_REQUIRED "17.0")
     message(DEBUG "Found clang-format version ${CLANGFORMAT_VERSION} (needs ${CLANGFORMAT_VERSION_REQUIRED}")
-    if(CLANGFORMAT_VERSION VERSION_GREATER_EQUAL "${CLANGFORMAT_VERSION_REQUIRED}")
+    if (CLANGFORMAT_VERSION VERSION_GREATER_EQUAL "${CLANGFORMAT_VERSION_REQUIRED}")
       file(GLOB_RECURSE isle_sources
+        "${PROJECT_SOURCE_DIR}/CONFIG/*.cpp"
+        "${PROJECT_SOURCE_DIR}/CONFIG/*.h"
         "${PROJECT_SOURCE_DIR}/ISLE/*.cpp"
         "${PROJECT_SOURCE_DIR}/ISLE/*.h"
+        "${PROJECT_SOURCE_DIR}/islemfc/*.cpp"
+        "${PROJECT_SOURCE_DIR}/islemfc/*.h"
         "${PROJECT_SOURCE_DIR}/LEGO1/*.cpp"
         "${PROJECT_SOURCE_DIR}/LEGO1/*.h"
       )

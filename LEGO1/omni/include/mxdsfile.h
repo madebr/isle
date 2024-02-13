@@ -14,13 +14,13 @@ class MxDSFile : public MxDSSource {
 public:
 	MxDSFile(const char* p_filename, MxULong p_skipReadingChunks);
 
-#ifdef ISLE_APP
-	~MxDSFile() override { Close(); }
-#else
+#ifdef BUILDING_LEGO1
 	// We have to explicitly use dllexport, otherwise this function cannot be exported,
 	// since it is inlined everywhere in LEGO1.DLL
 	// FUNCTION: LEGO1 0x100bfed0
 	__declspec(dllexport) ~MxDSFile() override { Close(); }
+#else
+	~MxDSFile() override { Close(); }
 #endif
 
 	// FUNCTION: LEGO1 0x100c0120

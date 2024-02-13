@@ -19,16 +19,9 @@ class CConfigApp : public CWinApp {
 public:
 	CConfigApp();
 
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CConfigApp)
-
 public:
 	BOOL InitInstance() override;
 	int ExitInstance() override;
-	//}}AFX_VIRTUAL
-
-	// Implementation
 
 	BOOL WriteReg(const char* p_key, const char* p_value) const;
 	BOOL ReadReg(LPCSTR p_key, LPCSTR p_value, DWORD p_size) const;
@@ -42,12 +35,8 @@ public:
 	DWORD FUN_004037a0() const;
 	DWORD FUN_004037e0() const;
 	BOOL FUN_00403810();
-	void CConfigApp::WriteRegisterSettings() const;
+	void WriteRegisterSettings() const;
 
-	//{{AFX_MSG(CConfigApp)
-	// NOTE - the ClassWizard will add and remove member functions here.
-	//    DO NOT EDIT what you see in these blocks of generated code !
-	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:

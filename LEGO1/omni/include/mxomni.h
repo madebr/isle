@@ -72,6 +72,7 @@ public:
 	MxEventManager* GetEventManager() const { return this->m_eventManager; }
 	MxAtomIdCounterSet* GetAtomIdCounterSet() const { return this->m_atomIdCounterSet; }
 	MxLong HandleActionEnd(MxParam& p_param);
+	MxString& GetMediaPath() { return m_mediaPath; }
 
 	// SYNTHETIC: LEGO1 0x100aefd0
 	// MxOmni::`scalar deleting destructor'

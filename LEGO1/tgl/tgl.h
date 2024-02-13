@@ -57,8 +57,8 @@ struct PaletteEntry {
 };
 
 struct DeviceDirect3DCreateData {
-	IDirect3D2* m_pDirect3D;
-	IDirect3DDevice2* m_pDirect3DDevice;
+	struct IDirect3D2* m_pDirect3D;
+	struct IDirect3DDevice2* m_pDirect3DDevice;
 };
 
 struct DeviceDirectDrawCreateData {

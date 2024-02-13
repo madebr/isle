@@ -9,6 +9,7 @@
 #include "mxqueue.h"
 
 #include <dinput.h>
+#include <mmsystem.h> // JOYCAPS
 
 class LegoControlManager;
 

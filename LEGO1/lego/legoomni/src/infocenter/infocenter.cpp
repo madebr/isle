@@ -22,6 +22,7 @@
 #include "mxstillpresenter.h"
 #include "mxticklemanager.h"
 #include "mxtransitionmanager.h"
+#include "viewmanager/viewmanager.h"
 
 DECOMP_SIZE_ASSERT(Infocenter, 0x1d8)
 DECOMP_SIZE_ASSERT(InfocenterMapEntry, 0x18)

@@ -1,5 +1,6 @@
 #include "legoentity.h"
 
+#include "3dmanager/lego3dmanager.h"
 #include "define.h"
 #include "legoomni.h"
 #include "legounksavedatawriter.h"

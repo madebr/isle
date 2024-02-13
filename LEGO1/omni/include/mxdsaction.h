@@ -71,6 +71,7 @@ public:
 	inline void SetUnknown84(MxCore* p_unk0x84) { m_unk0x84 = p_unk0x84; }
 	inline MxCore* GetOrigin() { return m_origin; }
 	inline void SetOrigin(MxCore* p_origin) { m_origin = p_origin; }
+	inline void SetUnk0x90(MxLong p_unk0x90) { m_unk0x90 = p_unk0x90; }
 
 	inline MxBool IsLooping() const { return m_flags & c_looping; }
 	inline MxBool IsBit3() const { return m_flags & c_bit3; }

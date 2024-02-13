@@ -4,6 +4,7 @@
 #include "decomp.h"
 #include "mxaudiomanager.h"
 
+#include <mmsystem.h>
 #include <windows.h>
 
 // VTABLE: LEGO1 0x100dc930

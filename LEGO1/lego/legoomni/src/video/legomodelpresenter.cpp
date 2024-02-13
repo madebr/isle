@@ -1,5 +1,6 @@
 #include "legomodelpresenter.h"
 
+#include "3dmanager/lego3dmanager.h"
 #include "define.h"
 #include "legoentity.h"
 #include "legoentitypresenter.h"
@@ -16,11 +17,11 @@ int g_modelPresenterConfig = 1;
 
 // GLOBAL: LEGO1 0x10102054
 // STRING: LEGO1 0x10102018
-char* g_autoCreate = "AUTO_CREATE";
+const char* g_autoCreate = "AUTO_CREATE";
 
 // GLOBAL: LEGO1 0x10102078
 // STRING: LEGO1 0x10101fc4
-char* g_dbCreate = "DB_CREATE";
+const char* g_dbCreate = "DB_CREATE";
 
 // FUNCTION: LEGO1 0x1000cca0
 void LegoModelPresenter::Destroy()

@@ -1,5 +1,6 @@
 #include "legocameracontroller.h"
 
+#include "3dmanager/lego3dmanager.h"
 #include "legoinputmanager.h"
 #include "legonotify.h"
 #include "legoomni.h"
