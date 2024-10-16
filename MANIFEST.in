@@ -1,0 +1,4 @@
+include reccmp/bin/cvdump.exe
+include reccmp/bin/DUMPBIN.EXE
+include reccmp/bin/LINK.EXE
+include reccmp/bin/MSPDB41.DLL

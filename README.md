@@ -1,64 +1,257 @@
-# LEGO Island Decompilation
+# LEGO Island Decompilation Tools
 
-[Development Vlog](https://www.youtube.com/playlist?list=PLbpl-gZkNl2COf_bB6cfgTapD5WduAfPz) | [Contributing](/CONTRIBUTING.md) | [Matrix](https://matrix.to/#/#isledecomp:matrix.org) | [Forums](https://forum.mattkc.com/viewforum.php?f=1) | [Patreon](https://www.patreon.com/mattkc)
-  
-This is a **work-in-progress** decompilation of LEGO Island (Version 1.1, English). It aims to be as accurate as possible, matching the recompiled instructions to the original machine code as much as possible. The goal is to provide a workable codebase that can be modified, improved, and ported to other platforms later on.
+Accuracy to the game's original code is the main goal of this project. To facilitate the decompilation effort and maintain overall quality, we have devised a set of annotations, to be embedded in the source code, which allow us to automatically verify the accuracy of re-compiled functions' assembly, virtual tables, variable offsets and more.
 
-## Status
+In order for contributions to be accepted, the annotations must be used in accordance to the rules outlined here. Proper use is enforced by [GitHub Actions](/.github/workflows) which run the Python tools found in this folder. It is recommended to integrate these tools into your local development workflow as well.
 
-<img src="https://legoisland.org/progress/ISLEPROGRESS.SVG" width="50%"><img src="https://legoisland.org/progress/LEGO1PROGRESS.SVG" width="50%">
+# Overview
 
-Currently, `ISLE.EXE` is completely decompiled and behaves identically to the original. A handful of stubborn instructions are not yet matching; however, we anticipate they will as more of the overall codebase is implemented.
+We are continually working on extending the capabilities of our "decompilation language" and the toolset around it. Some of the following annotations have not made it into formal verification and thus are not technically enforced on the source code level yet (marked as **WIP**). Nevertheless, it is recommended to use them since it is highly likely they will eventually be fully integrated.
 
-`LEGO1.DLL` is still lacking some gameplay features but is generally workable. If you would like to use this, make sure to do so without interacting with save files created by the retail version, as there might still be some incompatibilities.
+## Functions
 
-## Building
+All non-inlined functions in the code base with the exception of [3rd party code](/3rdparty) must be annotated with one of the following markers, which include the module name and address of the function as found in the original binaries. This information is then used to compare the recompiled assembly with the original assembly, resulting in an accuracy score. Functions in a given compilation unit must be ordered by their address in ascending order.
 
-This project uses the [CMake](https://cmake.org/) build system, which allows for a high degree of versatility regarding compilers and development environments. For the most accurate results, it is recommended to use Microsoft Visual C++ 4.20 (the same compiler used to build the original game). Since we're trying to match the output of this code to the original executables as closely as possible, all contributions will be graded with the output of this compiler.
+The annotations can be attached to the function implementation, which is the most common case, or use the "comment" syntax (see examples below) for functions that cannot be referred to directly (such as templated, synthetic or non-inlined inline functions). The latter should only ever appear in `.h` files.
 
+### `FUNCTION`
 
-These instructions will outline how to compile this repository into accurate instruction-matching binaries with Visual C++ 4.2. If you wish, you can try using other compilers, but this is at your own risk and won't be covered in this guide.
+Functions with a reasonably complete implementation which are not templated or synthetic (see below) should be annotated with `FUNCTION`.
 
-#### Prerequisites
-
-You will need the following software installed:
-
-- Microsoft Visual C++ 4.2. This can be found on many abandonware sites, but the installer can be a little iffy on modern versions of Windows. For convenience, a [portable version](https://github.com/itsmattkc/msvc420) is available that can be downloaded and used quickly instead.
-- [CMake](https://cmake.org/). A copy is often included with the "Desktop development with C++" workload in newer versions of Visual Studio; however, it can also be installed as a standalone app.
-
-#### Compiling
-
-1. Open a Command Prompt (`cmd`).
-1. From Visual C++ 4.2, run `BIN/VCVARS32.BAT x86` to populate the path and other environment variables for compiling with MSVC.
-1. Make a folder for compiled objects to go, such as a `build` folder inside the source repository (the folder you cloned/downloaded to).
-1. In your Command Prompt, `cd` to the build folder.
-1. Configure the project with CMake by running:
 ```
-cmake <path-to-source> -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+// FUNCTION: LEGO1 0x100b12c0
+MxCore* MxObjectFactory::Create(const char* p_name)
+{
+  // implementation
+}
+
+// FUNCTION: LEGO1 0x100140d0
+// MxCore::IsA
 ```
-  - **Visual C++ 4.2 has issues with paths containing spaces**. If you get configure or build errors, make sure neither CMake, the repository, nor Visual C++ 4.2 is in a path that contains spaces.
-  - Replace `<path-to-source>` with the source repository. This can be `..` if your build folder is inside the source repository.
-  - `RelWithDebInfo` is recommended because it will produce debug symbols useful for further decompilation work. However, you can change this to `Release` if you don't need them. `Debug` builds are not recommended because they are unlikely to be compatible with the retail `LEGO1.DLL`, which is currently the only way to use this decompilation for gameplay.
-  - `NMake Makefiles` is most recommended because it will be immediately compatible with Visual C++ 4.2. For faster builds, you can use `Ninja` (if you have it installed), however due to limitations in Visual C++ 4.2, you can only build `Release` builds this way (debug symbols cannot be generated with `Ninja`).
-1. Build the project by running `nmake` or `cmake --build <build-folder>`
-1. When this is done, there should a recompiled `ISLE.EXE` and `LEGO1.DLL` in the build folder.
-1. Note that `nmake` must be run twice under certain conditions, so it is advisable to always (re-)compile using `nmake && nmake`.
 
-If you have a CMake-compatible IDE, it should be pretty straightforward to use this repository, as long as you can use `VCVARS32.BAT` and set the generator to `NMake Makefiles`.
+### `STUB`
 
-## Usage
+Functions with no or a very incomplete implementation should be annotated with `STUB`. These will not be compared to the original assembly.
 
-Simply place the compiled `ISLE.EXE` and `LEGO1.DLL` into LEGO Island's install folder (usually `C:\Program Files\LEGO Island` or `C:\Program Files (x86)\LEGO Island`). Alternatively, LEGO Island can run from any directory as long as `ISLE.EXE` and `LEGO1.DLL` are in the same directory, and the registry keys (usually `HKEY_LOCAL_MACHINE\Software\Mindscape\LEGO Island` or `HKEY_LOCAL_MACHINE\Software\Wow6432Node\Mindscape\LEGO Island`) point to the correct location for the asset files.
+```
+// STUB: LEGO1 0x10011d50
+LegoCameraController::LegoCameraController()
+{
+  // TODO
+}
+```
 
-## Contributing
+### `TEMPLATE`
 
-If you're interested in helping or contributing to this project, check out the [CONTRIBUTING](/CONTRIBUTING.md) page.
+Templated functions should be annotated with `TEMPLATE`. Since the goal is to eventually have a full accounting of all the functions present in the binaries, please make an effort to find and annotate every function of a templated class.
 
-## Additional Information
+```
+// TEMPLATE: LEGO1 0x100c0ee0
+// list<MxNextActionDataStart *,allocator<MxNextActionDataStart *> >::_Buynode
 
-### Which version of LEGO Island do I have?
+// TEMPLATE: LEGO1 0x100c0fc0
+// MxStreamListMxDSSubscriber::~MxStreamListMxDSSubscriber
 
-Right click on `LEGO1.DLL`, select `Properties`, and switch to the `Details` tab. Under `Version` you should either see `1.0.0.0` (1.0) or `1.1.0.0` (1.1). Additionally, you can look at the game disc files; 1.0's files will all say August 8, 1997, and 1.1's files will all say September 8, 1997. Version 1.1 is by far the most common, especially if you're not using the English or Japanese versions, so that's most likely the version you have. Please note that some localized versions of LEGO Island were recompiled with small changes despite maintaining a version number parallel with other versions; this decompilation is specifically targeting the English release of version 1.1 of LEGO Island. You can verify you have the correct version using the checksums below:
+// TEMPLATE: LEGO1 0x100c1010
+// MxStreamListMxDSAction::~MxStreamListMxDSAction
+```
 
-* ISLE.EXE `md5: f6da12249e03eed1c74810cd23beb9f5`
-* LEGO1.DLL `md5: 4e2f6d969ea2ef8655ba3fc221a0c8fe`
+### `SYNTHETIC`
+
+Synthetic functions should be annotated with `SYNTHETIC`. A synthetic function is generated by the compiler; most common is the "scalar deleting destructor" found in virtual tables. Other cases include default destructors and assignment operators. Note: `SYNTHETIC` takes precedence over `TEMPLATE`.
+
+```
+// SYNTHETIC: LEGO1 0x10003210
+// Helicopter::`scalar deleting destructor'
+
+// SYNTHETIC: LEGO1 0x100c4f50
+// MxCollection<MxRegionLeftRight *>::`scalar deleting destructor'
+
+// SYNTHETIC: LEGO1 0x100c4fc0
+// MxList<MxRegionLeftRight *>::`scalar deleting destructor'
+```
+
+### `LIBRARY`
+
+Functions located in 3rd party libraries should be annotated with `LIBRARY`. Since the goal is to eventually have a full accounting of all the functions present in the binaries, please make an effort to find and annotate every function of every statically linked library, including the MSVC standard libraries.
+
+```
+// LIBRARY: ISLE 0x4061b0
+// _MemPoolInit@4
+
+// LIBRARY: ISLE 0x406520
+// _MemPoolSetPageSize@8
+
+// LIBRARY: ISLE 0x406630
+// _MemPoolSetBlockSizeFS@8
+```
+
+## Virtual tables
+
+Classes with a virtual table should be annotated using the `VTABLE` marker, which includes the module name and address of the virtual table. Additionally, virtual function declarations should be annotated with a comment indicating their relative offset. Please use the following example as a reference.
+
+```
+// VTABLE: LEGO1 0x100dc900
+class MxEventManager : public MxMediaManager {
+public:
+	MxEventManager();
+	virtual ~MxEventManager() override;
+
+	virtual void Destroy() override;                                     // vtable+0x18
+	virtual MxResult Create(MxU32 p_frequencyMS, MxBool p_createThread); // vtable+0x28
+```
+
+## Class size
+
+Classes should be annotated using the `SIZE` marker to indicate their size. If you are unsure about the class size in the original binary, please use the currently available information (known member variables) and detail the circumstances in an extra comment if necessary.
+
+```
+// SIZE 0x1c
+class MxCriticalSection {
+public:
+	MxCriticalSection();
+	~MxCriticalSection();
+	static void SetDoMutex();
+```
+
+Furthermore, add `DECOMP_SIZE_ASSERT(MxCriticalSection, 0x1c)` to the respective `.cpp` file (if the class has no dedicated `.cpp` file, use any appropriate `.cpp` file where the class is used).
+
+## Member variables
+
+Member variables should be annotated with their relative offsets.
+
+```
+class MxDSObject : public MxCore {
+private:
+	MxU32 m_sizeOnDisk;   // 0x8
+	MxU16 m_type;         // 0xc
+	char* m_sourceName;   // 0x10
+	undefined4 m_unk0x14; // 0x14
+```
+
+## Global variables
+
+Global variables should be annotated using the `GLOBAL` marker, which includes the module name and address of the variable.
+
+```
+// GLOBAL: LEGO1 0x100f456c
+MxAtomId* g_jukeboxScript = NULL;
+
+// GLOBAL: LEGO1 0x100f4570
+MxAtomId* g_pz5Script = NULL;
+
+// GLOBAL: LEGO1 0x100f4574
+MxAtomId* g_introScript = NULL;
+```
+
+## Strings
+
+String values should be annotated using the `STRING` marker, which includes the module name and address of the string.
+
+```
+inline virtual const char* ClassName() const override // vtable+0x0c
+{
+	// STRING: LEGO1 0x100f03fc
+	return "Act2PoliceStation";
+}
+```
+
+# Tooling
+
+Use `pip` to install the required packages to be able to use the Python tools found in this folder:
+
+```
+pip install -r tools/requirements.txt
+```
+
+The example usages below assume that the current working directory is this repository's root and that the retail binaries have been copied to `./legobin`.
+
+* [`decomplint`](/tools/decomplint): Checks the decompilation annotations (see above)
+    * e.g. `py -m tools.decomplint.decomplint --module LEGO1 LEGO1`
+* [`isledecomp`](/tools/isledecomp): A library that implements a parser to identify the decompilation annotations (see above)
+* [`ncc`](/tools/ncc): Checks naming conventions based on a set of rules
+* [`reccmp`](/tools/reccmp): Compares an original binary with a recompiled binary, provided a PDB file. For example:
+    * Display the diff for a single function: `py -m tools.reccmp.reccmp --verbose 0x100ae1a0 legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+    * Generate an HTML report: `py -m tools.reccmp.reccmp --html output.html legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+    * Create a base file for diffs: `py -m tools.reccmp.reccmp --json base.json --silent legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+    * Diff against a base file: `py -m tools.reccmp.reccmp --diff base.json legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+* [`stackcmp`](/tools/stackcmp): Compares the stack layout for a given function that almost matches.
+    * e.g. `py -m tools.stackcmp.stackcmp legobin/BETA10.DLL build_debug/LEGO1.DLL build_debug/LEGO1.pdb . 0x1007165d`
+* [`roadmap`](/tools/roadmap): Compares symbol locations in an original binary with the same symbol locations of a recompiled binary
+* [`verexp`](/tools/verexp): Verifies exports by comparing the exports of the original DLL and the recompiled DLL
+* [`vtable`](/tools/vtable): Asserts virtual table correctness by comparing a recompiled binary with the original
+    * e.g. `py -m tools.vtable.vtable legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+* [`datacmp.py`](/tools/datacmp.py): Compares global data found in the original with the recompiled version
+    * e.g. `py -m tools.datacmp legobin/LEGO1.DLL build/LEGO1.DLL build/LEGO1.PDB .`
+* [`patch_c2.py`](/tools/patch_c2.py): Patches `C2.EXE` (part of MSVC 4.20) to get rid of a bugged warning
+
+## Testing
+
+`isledecomp` comes with a suite of tests. Install `pytest` and run it, passing in the directory:
+
+```
+pip install pytest
+pytest tools/isledecomp/tests/
+```
+
+## Tool Development
+
+In order to keep the Python code clean and consistent, we use `pylint` and `black`:
+
+`pip install black pylint`
+
+### Run pylint (ignores build and virtualenv)
+
+`pylint tools/ --ignore=build,ncc`
+
+### Check Python code formatting without rewriting files
+
+`black --check tools/`
+
+### Apply Python code formatting
+
+`black tools/`
+
+# Modules
+The following is a list of all the modules found in the annotations (e.g. `// FUNCTION: [module] [address]`) and which binaries they refer to. See [this list of all known versions of the game](https://www.legoisland.org/wiki/LEGO_Island#Download).
+
+## Retail v1.1.0.0 (v1.1)
+* `LEGO1` -> `LEGO1.DLL`
+* `CONFIG`-> `CONFIG.EXE`
+* `ISLE` -> `ISLE.EXE`
+
+These modules are the most important ones and refer to the English retail version 1.1.0.0 (often shortened to v1.1), which is the most widely released one. These are the ones we attempt to decompile and match as best as possible.
+
+## BETA v1.0
+
+* `BETA10` -> `LEGO1D.DLL`
+
+The Beta 1.0 version contains a debug build of the game. While it does not have debug symbols, it still has a number of benefits:
+* It is built with less or no optimisation, leading to better decompilations in Ghidra
+* Far fewer functions are inlined by the compiler, so it can be used to recognise inlined functions
+* It contains assertions that tell us original variable names and code file paths
+
+It is therefore advisable to search for the corresponding function in `BETA10` when decompiling a function in `LEGO1`. Finding the correct function can be tricky, but is usually worth it, especially for longer functions.
+
+Unfortunately, some code has been changed after this beta version was created. Therefore, we are not aiming for a perfect binary match of `BETA10`. In case of discrepancies, `LEGO1` (as defined above) is our "gold standard" for matching.
+
+### Re-compiling a beta build (**WIP**)
+
+If you want to match the code against `BETA10`, use the following `cmake` setup to create a debug build:
+```
+cmake <path-to-source> -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_BUILD_TYPE=Debug -DISLE_USE_SMARTHEAP=OFF
+```
+**TODO**: If you can figure out how to make a debug build with SmartHeap enabled, please add it here.
+
+If you want to run scripts to compare your debug build to `BETA10` (e.g. `reccmp`), it is advisable to add a copy of `LEGO1D.DLL` to `/legobin` and rename it to `BETA10.DLL`.
+
+### Finding matching functions
+
+This is not a recipe, but rather a list of things you can try.
+* If you are working on a virtual function in a class, try to find the class' vtable. Many (but not all) classes implement `ClassName()`. These functions are usually easy to find by searching the memory for the string consisting of the class name. Keep in mind that not all child classes overwrite this function, so if the function you found is used in multiple vtables (or if you found multiple `ClassName()`-like functions), make sure you actually have the parent's vtable.
+* If that does not help, you can try to walk up the call tree and try to locate a function that calls the function you are interested in.
+* Assertions can also help you - most `.cpp` file names have already been matched based on `BETA10`, so you can search for the name of your `.cpp` file and check all the assertions in that file. While that does not find all functions in a given source file, it usually finds the more complex ones.
+* _If you have found any other strategies, please add them here._
+
+## Others (**WIP**)
+* `ALPHA` (only used twice)
