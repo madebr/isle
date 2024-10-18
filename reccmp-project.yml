@@ -1,0 +1,10 @@
+targets:
+  ISLE:
+    filename: ISLE.EXE
+    source-root: ISLE
+  LEGO1:
+    filename: LEGO1.DLL
+    source-root: LEGO1
+  CONFIG:
+    filename: CONFIG.EXE
+    source-root: CONFIG
