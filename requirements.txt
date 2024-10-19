@@ -1,1 +1,1 @@
-reccmp @ git+https://github.com/isledecmp/reccmp
+reccmp @ git+https://github.com/madebr/reccmp@project-structure
